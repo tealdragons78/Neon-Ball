@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Ball</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', monospace;
+        }
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            overflow: hidden;
+            color: #00ffff;
+        }
+
+        /* Custom scrollbar for main menu */
+        #mainMenu::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #mainMenu::-webkit-scrollbar-track {
+            background: rgba(23, 121, 121, 0.847);
+            border-radius: 10px;
+        }
+
+        #mainMenu::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            border-radius: 10px;
+        }
+
+        #mainMenu::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+        }
+        #gameCanvas {
+            background: linear-gradient(90deg, #0f3460, #16537e, #0f3460);
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 30px #00ffff;
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 15px 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        #player1Score, #player2Score {
+            font-size: 2.5em;
+            font-weight: 900;
+            text-shadow: 0 0 10px #00ffff;
+            display: inline-block;
+            margin: 0 20px;
+        }
+        #timer {
+            font-size: 1.2em;
+            margin-top: 10px;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+        #powerMeter {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        #powerBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+            transition: width 0.1s;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+        }
+        .control-group {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            border-radius: 10px;
+            padding: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        #mainMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+            pointer-events: all;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        #mainMenu h1 {
+            font-size: 3em;
+            font-weight: 900;
+            text-shadow: 0 0 30px #00ffff;
+            margin: 20px 0 30px 0;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            position: sticky;
+            top: 20px;
+        }
+
+        .menu-section {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .menu-section h3 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .skin-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .skin-option {
+            width: 60px;
+            height: 60px;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .skin-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px;
+        }
+
+        .skin-option.selected {
+            border-color: #ffff00;
+            box-shadow: 0 0 15px #ffff00;
+        }
+
+        .game-mode-btn {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border: none;
+            color: #000;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .game-mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #00ffff;
+        }
+
+        .game-mode-btn.ai {
+            background: linear-gradient(45deg, #ff00ff, #ff0080);
+        }
+
+        .difficulty-selector {
+            margin: 20px 0;
+        }
+
+        .difficulty-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn:hover, .difficulty-btn.selected {
+            background: #00ffff;
+            color: #000;
+            box-shadow: 0 0 15px #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="mainMenu">
+        <h1>Neon Ball</h1>
+        
+        <div class="menu-section">
+            <h3>PLAYER 1 SKIN</h3>
+            <div class="skin-grid" id="player1Skins">
+                <div class="skin-option selected" data-color="#00ffff" style="background: #00ffff;">CYAN</div>
+                <div class="skin-option" data-color="#00ff00" style="background: #00ff00;">NEON</div>
+                <div class="skin-option" data-color="#ffff00" style="background: #ffff00;">GOLD</div>
+                <div class="skin-option" data-color="#ff8000" style="background: #ff8000;">FIRE</div>
+                <div class="skin-option" data-color="#8000ff" style="background: #8000ff;">VOID</div>
+                <div class="skin-option" data-color="#ff0080" style="background: #ff0080;">PINK</div>
+                <div class="skin-option" data-color="#80ff80" style="background: #80ff80;">MINT</div>
+                <div class="skin-option" data-color="#ffffff" style="background: #ffffff;">PURE</div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>PLAYER 2 SKIN</h3>
+            <div class="skin-grid" id="player2Skins">
+                <div class="skin-option" data-color="#00ffff" style="background: #00ffff;">CYAN</div>
+                <div class="skin-option" data-color="#00ff00" style="background: #00ff00;">NEON</div>
+                <div class="skin-option" data-color="#ffff00" style="background: #ffff00;">GOLD</div>
+                <div class="skin-option" data-color="#ff8000" style="background: #ff8000;">FIRE</div>
+                <div class="skin-option" data-color="#8000ff" style="background: #8000ff;">VOID</div>
+                <div class="skin-option selected" data-color="#ff00ff" style="background: #ff00ff;">MAGE</div>
+                <div class="skin-option" data-color="#80ff80" style="background: #80ff80;">MINT</div>
+                <div class="skin-option" data-color="#ffffff" style="background: #ffffff;">PURE</div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>GAME MODE</h3>
+            <button class="game-mode-btn" onclick="startGame('pvp')">PLAYER VS PLAYER</button>
+            <button class="game-mode-btn ai" id="aiModeBtn">PLAYER VS AI</button>
+            
+            <div class="difficulty-selector" id="difficultySelector" style="display: none;">
+                <h4 style="color: #ff00ff; margin-bottom: 10px;">AI CHARACTER</h4>
+                <div class="ai-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0;">
+                    <div class="ai-character selected" data-ai="defender" style="background: rgba(0,255,255,0.2); border: 2px solid #00ffff; padding: 15px; border-radius: 10px; cursor: pointer; text-align: center;">
+                        <div style="font-weight: 700; color: #00ffff;">DEFENDER</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">Defensive AI<br>Protects goal</div>
+                    </div>
+                    <div class="ai-character" data-ai="striker" style="background: rgba(255,0,255,0.2); border: 2px solid transparent; padding: 15px; border-radius: 10px; cursor: pointer; text-align: center;">
+                        <div style="font-weight: 700; color: #ff00ff;">STRIKER</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">Aggressive AI<br>Always attacks</div>
+                    </div>
+                    <div class="ai-character" data-ai="balanced" style="background: rgba(255,255,0,0.2); border: 2px solid transparent; padding: 15px; border-radius: 10px; cursor: pointer; text-align: center;">
+                        <div style="font-weight: 700; color: #ffff00;">BALANCED</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">Smart AI<br>Adapts strategy</div>
+                    </div>
+                    <div class="ai-character" data-ai="chaos" style="background: rgba(255,128,0,0.2); border: 2px solid transparent; padding: 15px; border-radius: 10px; cursor: pointer; text-align: center;">
+                        <div style="font-weight: 700; color: #ff8000;">CHAOS</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">Unpredictable AI<br>Random moves</div>
+                    </div>
+                </div>
+                
+                <h4 style="color: #ff00ff; margin: 20px 0 10px 0;">DIFFICULTY</h4>
+                <button class="difficulty-btn selected" data-difficulty="easy">EASY</button>
+                <button class="difficulty-btn" data-difficulty="medium">MEDIUM</button>
+                <button class="difficulty-btn" data-difficulty="hard">HARD</button>
+                <button class="difficulty-btn" data-difficulty="insane">INSANE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <div id="scoreBoard">
+            <div>
+                <span id="player1Score">0</span>
+                <span style="font-size: 1.5em;">-</span>
+                <span id="player2Score">0</span>
+            </div>
+            <div id="timer">3:00</div>
+        </div>
+        <div id="powerMeter">
+            <div id="powerBar"></div>
+        </div>
+        <div id="controls">
+            <div class="control-group">
+                <strong>PLAYER 1</strong><br>
+                WASD: Move<br>
+                SPACE: Power Shot
+            </div>
+            <div class="control-group" id="player2Controls">
+                <strong>PLAYER 2</strong><br>
+                Arrow Keys: Move<br>
+                ENTER: Power Shot
+            </div>
+        </div>
+        <button id="menuBtn" style="position: absolute; top: 20px; right: 20px; background: rgba(255,0,0,0.8); border: none; color: white; padding: 10px 20px; border-radius: 5px; font-family: 'Orbitron', monospace; cursor: pointer; pointer-events: all;">MENU</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        let gameTime = 180;
+        let gameRunning = false;
+        let particles = [];
+        let gameMode = 'pvp';
+        let aiDifficulty = 'easy';
+        let aiCharacter = 'defender';
+        let aiPlayer = null;
+        
+        const player1 = {
+            x: canvas.width * 0.2,
+            y: canvas.height / 2,
+            width: 40,
+            height: 40,
+            speed: 6,
+            color: '#00ffff',
+            powerCharging: false,
+            powerLevel: 0
+        };
+        
+        const player2 = {
+            x: canvas.width * 0.8,
+            y: canvas.height / 2,
+            width: 40,
+            height: 40,
+            speed: 6,
+            color: '#ff00ff',
+            powerCharging: false,
+            powerLevel: 0
+        };
+        
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 15,
+            vx: 0,
+            vy: 0,
+            maxSpeed: 25
+        };
+        
+        const goal1 = { x: 0, y: canvas.height * 0.3, width: 20, height: canvas.height * 0.4 };
+        const goal2 = { x: canvas.width - 20, y: canvas.height * 0.3, width: 20, height: canvas.height * 0.4 };
+        
+        let score1 = 0;
+        let score2 = 0;
+        
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Menu functionality
+        function setupMenuListeners() {
+            // Menu button
+            document.getElementById('menuBtn').addEventListener('click', showMainMenu);
+            
+            // Skin selection
+            document.querySelectorAll('#player1Skins .skin-option').forEach(skin => {
+                skin.addEventListener('click', () => {
+                    document.querySelectorAll('#player1Skins .skin-option').forEach(s => s.classList.remove('selected'));
+                    skin.classList.add('selected');
+                    player1.color = skin.dataset.color;
+                });
+            });
+
+            document.querySelectorAll('#player2Skins .skin-option').forEach(skin => {
+                skin.addEventListener('click', () => {
+                    document.querySelectorAll('#player2Skins .skin-option').forEach(s => s.classList.remove('selected'));
+                    skin.classList.add('selected');
+                    player2.color = skin.dataset.color;
+                });
+            });
+
+            // AI character selection
+            document.querySelectorAll('.ai-character').forEach(char => {
+                char.addEventListener('click', () => {
+                    document.querySelectorAll('.ai-character').forEach(c => {
+                        c.style.border = '2px solid transparent';
+                        c.classList.remove('selected');
+                    });
+                    char.style.border = '2px solid #ffff00';
+                    char.classList.add('selected');
+                    aiCharacter = char.dataset.ai;
+                });
+            });
+
+            // Difficulty selection
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    aiDifficulty = btn.dataset.difficulty;
+                });
+            });
+
+            // Show difficulty selector when AI mode is clicked
+            document.getElementById('aiModeBtn').addEventListener('click', () => {
+                const selector = document.getElementById('difficultySelector');
+                if (selector.style.display === 'none' || selector.style.display === '') {
+                    selector.style.display = 'block';
+                } else {
+                    startGame('ai');
+                }
+            });
+        }
+
+        function startGame(mode) {
+            gameMode = mode;
+            gameRunning = true;
+            
+            if (mode === 'ai') {
+                aiPlayer = createAI();
+                document.getElementById('player2Controls').innerHTML = '<strong>AI: ' + aiCharacter.toUpperCase() + '</strong><br>Difficulty: ' + aiDifficulty.toUpperCase();
+            } else {
+                aiPlayer = null;
+                document.getElementById('player2Controls').innerHTML = '<strong>PLAYER 2</strong><br>Arrow Keys: Move<br>ENTER: Power Shot';
+            }
+            
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            restartGame();
+        }
+
+        function showMainMenu() {
+            gameRunning = false;
+            document.getElementById('mainMenu').style.display = 'flex';
+            document.getElementById('ui').style.display = 'none';
+        }
+
+        function createAI() {
+            const difficulties = {
+                easy: { speed: 4, reaction: 0.03, accuracy: 0.6, powerChance: 0.2 },
+                medium: { speed: 5, reaction: 0.05, accuracy: 0.8, powerChance: 0.3 },
+                hard: { speed: 6, reaction: 0.07, accuracy: 0.9, powerChance: 0.45 },
+                insane: { speed: 7, reaction: 0.09, accuracy: 0.98, powerChance: 0.6 }
+            };
+            
+            return {
+                ...difficulties[aiDifficulty],
+                powerCooldown: 0
+            };
+        }
+        
+        function createParticle(x, y, color) {
+            particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                life: 30,
+                color: color
+            });
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life / 30;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+        
+        function updatePlayer(player) {
+            let moving = false;
+            
+            if (player === player1) {
+                if (keys['w'] && player.y > 0) { player.y -= player.speed; moving = true; }
+                if (keys['s'] && player.y < canvas.height - player.height) { player.y += player.speed; moving = true; }
+                if (keys['a'] && player.x > 0) { player.x -= player.speed; moving = true; }
+                if (keys['d'] && player.x < canvas.width - player.width) { player.x += player.speed; moving = true; }
+                
+                if (keys[' ']) {
+                    player.powerCharging = true;
+                    player.powerLevel = Math.min(player.powerLevel + 2, 100);
+                    document.getElementById('powerMeter').style.display = 'block';
+                    document.getElementById('powerBar').style.width = player.powerLevel + '%';
+                } else if (player.powerCharging) {
+                    powerShot(player);
+                    player.powerCharging = false;
+                    player.powerLevel = 0;
+                    document.getElementById('powerMeter').style.display = 'none';
+                }
+            } else if (gameMode === 'ai' && aiPlayer) {
+                // AI Logic
+                updateAI(player);
+            } else {
+                // Human Player 2
+                if (keys['arrowup'] && player.y > 0) { player.y -= player.speed; moving = true; }
+                if (keys['arrowdown'] && player.y < canvas.height - player.height) { player.y += player.speed; moving = true; }
+                if (keys['arrowleft'] && player.x > 0) { player.x -= player.speed; moving = true; }
+                if (keys['arrowright'] && player.x < canvas.width - player.width) { player.x += player.speed; moving = true; }
+                
+                if (keys['enter']) {
+                    player.powerCharging = true;
+                    player.powerLevel = Math.min(player.powerLevel + 2, 100);
+                    document.getElementById('powerMeter').style.display = 'block';
+                    document.getElementById('powerBar').style.width = player.powerLevel + '%';
+                } else if (player.powerCharging) {
+                    powerShot(player);
+                    player.powerCharging = false;
+                    player.powerLevel = 0;
+                    document.getElementById('powerMeter').style.display = 'none';
+                }
+            }
+            
+            if (moving) {
+                createParticle(player.x + player.width/2, player.y + player.height, player.color);
+            }
+        }
+
+        function updateAI(player) {
+            if (!aiPlayer) return;
+            
+            // Decrease power cooldown
+            if (aiPlayer.powerCooldown > 0) aiPlayer.powerCooldown--;
+            
+            // Calculate distances and positions
+            const ballDist = Math.sqrt((ball.x - player.x) ** 2 + (ball.y - player.y) ** 2);
+            
+            // ALWAYS CHASE THE BALL - no exceptions
+            let targetX = ball.x;
+            let targetY = ball.y;
+            let shouldCharge = false;
+            
+            // Different AI characters chase differently
+            switch(aiCharacter) {
+                case 'striker':
+                    // Go directly for ball, very aggressive
+                    targetX = ball.x;
+                    targetY = ball.y;
+                    if (ballDist < 70) shouldCharge = Math.random() < 0.5;
+                    break;
+                    
+                case 'defender':
+                    // Chase ball but stay slightly back
+                    targetX = ball.x + 20;
+                    targetY = ball.y;
+                    if (ballDist < 60) shouldCharge = Math.random() < 0.3;
+                    break;
+                    
+                case 'balanced':
+                    // Standard ball chasing
+                    targetX = ball.x;
+                    targetY = ball.y;
+                    if (ballDist < 65) shouldCharge = Math.random() < 0.4;
+                    break;
+                    
+                case 'chaos':
+                    // Chase ball with some randomness
+                    targetX = ball.x + (Math.random() - 0.5) * 40;
+                    targetY = ball.y + (Math.random() - 0.5) * 40;
+                    if (ballDist < 80) shouldCharge = Math.random() < 0.6;
+                    break;
+                    
+                default:
+                    // Default: always go for ball
+                    targetX = ball.x;
+                    targetY = ball.y;
+                    if (ballDist < 60) shouldCharge = Math.random() < aiPlayer.powerChance;
+            }
+            
+            // Allow AI to go anywhere on field to chase ball (remove restrictions)
+            targetX = Math.max(50, Math.min(canvas.width - 50, targetX));
+            targetY = Math.max(50, Math.min(canvas.height - 50, targetY));
+            
+            // Direct movement - no smoothing delays
+            const dx = targetX - player.x;
+            const dy = targetY - player.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            // Always move toward ball if not right on top of it
+            if (distance > 3) {
+                const moveX = (dx / distance) * aiPlayer.speed;
+                const moveY = (dy / distance) * aiPlayer.speed;
+                
+                // Apply movement
+                player.x = Math.max(0, Math.min(canvas.width - player.width, player.x + moveX));
+                player.y = Math.max(0, Math.min(canvas.height - player.height, player.y + moveY));
+                
+                // Movement particles
+                if (Math.random() < 0.15) {
+                    createParticle(player.x + player.width/2, player.y + player.height, player.color);
+                }
+            }
+            
+            // Power shot when close to ball
+            if (shouldCharge && aiPlayer.powerCooldown <= 0) {
+                player.powerCharging = true;
+                player.powerLevel = Math.min(player.powerLevel + 4, 100);
+                aiPlayer.powerCooldown = 40;
+            } else if (player.powerCharging && player.powerLevel > 25) {
+                powerShot(player);
+                player.powerCharging = false;
+                player.powerLevel = 0;
+            }
+        }
+        
+        function powerShot(player) {
+            const dx = ball.x - (player.x + player.width/2);
+            const dy = ball.y - (player.y + player.height/2);
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            if (distance < 60) {
+                const power = player.powerLevel / 100;
+                const force = 15 + (power * 15);
+                
+                ball.vx = (dx / distance) * force;
+                ball.vy = (dy / distance) * force;
+                
+                // Create explosion effect
+                for (let i = 0; i < 20; i++) {
+                    createParticle(ball.x, ball.y, player.color);
+                }
+            }
+        }
+        
+        function updateBall() {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            
+            // Friction
+            ball.vx *= 0.99;
+            ball.vy *= 0.99;
+            
+            // Bounce off top and bottom walls
+            if (ball.y - ball.radius <= 0) {
+                ball.vy = Math.abs(ball.vy);
+                ball.y = ball.radius;
+                createParticle(ball.x, ball.y, '#ffffff');
+            }
+            if (ball.y + ball.radius >= canvas.height) {
+                ball.vy = -Math.abs(ball.vy);
+                ball.y = canvas.height - ball.radius;
+                createParticle(ball.x, ball.y, '#ffffff');
+            }
+            
+            // Check goals first
+            if (ball.x - ball.radius <= goal1.x + goal1.width && 
+                ball.y >= goal1.y && ball.y <= goal1.y + goal1.height) {
+                score2++;
+                resetBall();
+                for (let i = 0; i < 50; i++) {
+                    createParticle(ball.x, ball.y, player2.color);
+                }
+                return; // Exit early after goal
+            }
+            
+            if (ball.x + ball.radius >= goal2.x && 
+                ball.y >= goal2.y && ball.y <= goal2.y + goal2.height) {
+                score1++;
+                resetBall();
+                for (let i = 0; i < 50; i++) {
+                    createParticle(ball.x, ball.y, player1.color);
+                }
+                return; // Exit early after goal
+            }
+            
+            // Bounce off left wall (not in goal area)
+            if (ball.x - ball.radius <= 0) {
+                if (ball.y < goal1.y || ball.y > goal1.y + goal1.height) {
+                    ball.vx = Math.abs(ball.vx);
+                    ball.x = ball.radius;
+                    createParticle(ball.x, ball.y, '#ffffff');
+                } else {
+                    // Ball is in goal area but didn't score - push it back
+                    ball.x = goal1.x + goal1.width + ball.radius + 5;
+                    ball.vx = Math.abs(ball.vx) * 0.5;
+                }
+            }
+            
+            // Bounce off right wall (not in goal area)
+            if (ball.x + ball.radius >= canvas.width) {
+                if (ball.y < goal2.y || ball.y > goal2.y + goal2.height) {
+                    ball.vx = -Math.abs(ball.vx);
+                    ball.x = canvas.width - ball.radius;
+                    createParticle(ball.x, ball.y, '#ffffff');
+                } else {
+                    // Ball is in goal area but didn't score - push it back
+                    ball.x = goal2.x - ball.radius - 5;
+                    ball.vx = -Math.abs(ball.vx) * 0.5;
+                }
+            }
+            
+            // Limit ball speed
+            const speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
+            if (speed > ball.maxSpeed) {
+                ball.vx = (ball.vx / speed) * ball.maxSpeed;
+                ball.vy = (ball.vy / speed) * ball.maxSpeed;
+            }
+            
+            // Player collision
+            checkPlayerCollision(player1);
+            checkPlayerCollision(player2);
+        }
+        
+        function checkPlayerCollision(player) {
+            const dx = ball.x - (player.x + player.width/2);
+            const dy = ball.y - (player.y + player.height/2);
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            if (distance < ball.radius + 25) {
+                const force = 8;
+                ball.vx = (dx / distance) * force;
+                ball.vy = (dy / distance) * force;
+                createParticle(ball.x, ball.y, player.color);
+            }
+        }
+        
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.vx = (Math.random() - 0.5) * 10;
+            ball.vy = (Math.random() - 0.5) * 10;
+        }
+        
+        function drawField() {
+            // Field lines
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 3;
+            
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
+            ctx.stroke();
+            
+            // Center circle
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Goals
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(goal1.x, goal1.y, goal1.width, goal1.height);
+            ctx.fillRect(goal2.x, goal2.y, goal2.width, goal2.height);
+        }
+        
+        function drawPlayer(player) {
+            // Glow effect
+            ctx.shadowColor = player.color;
+            ctx.shadowBlur = 20;
+            
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Power charging effect
+            if (player.powerCharging) {
+                ctx.strokeStyle = player.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, 30 + player.powerLevel/5, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+        
+        function drawBall() {
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 15;
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+        }
+        
+        function updateTimer() {
+            if (gameRunning && gameTime > 0) {
+                gameTime--;
+                const minutes = Math.floor(gameTime / 60);
+                const seconds = gameTime % 60;
+                document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (gameTime <= 0) {
+                    gameRunning = false;
+                    endGame();
+                }
+            }
+        }
+        
+        function endGame() {
+            let winner = score1 > score2 ? 'PLAYER 1 WINS!' : score2 > score1 ? 'PLAYER 2 WINS!' : 'TIE GAME!';
+            alert(`GAME OVER! ${winner}\nFinal Score: ${score1} - ${score2}`);
+            restartGame();
+        }
+        
+        function restartGame() {
+            score1 = 0;
+            score2 = 0;
+            gameTime = 180;
+            gameRunning = true;
+            
+            player1.x = canvas.width * 0.2;
+            player1.y = canvas.height / 2;
+            player1.powerCharging = false;
+            player1.powerLevel = 0;
+            
+            player2.x = canvas.width * 0.8;
+            player2.y = canvas.height / 2;
+            player2.powerCharging = false;
+            player2.powerLevel = 0;
+            
+            resetBall();
+            particles = [];
+            
+            // Reset AI if in AI mode
+            if (gameMode === 'ai' && aiPlayer) {
+                aiPlayer.powerCooldown = 0;
+                aiPlayer.strategy = 'defensive';
+            }
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('player1Score').textContent = score1;
+            document.getElementById('player2Score').textContent = score2;
+        }
+        
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawField();
+            
+            if (gameRunning) {
+                updatePlayer(player1);
+                updatePlayer(player2);
+                updateBall();
+            }
+            
+            updateParticles();
+            
+            drawPlayer(player1);
+            drawPlayer(player2);
+            drawBall();
+            drawParticles();
+            
+            updateUI();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Timer
+        setInterval(updateTimer, 1000);
+        
+        // Initialize menu listeners when page loads
+        window.addEventListener('load', () => {
+            setupMenuListeners();
+        });
+        
+        // Start game
+        gameLoop();
+    </script>
+</body>
+</html>     
+   <style>
+        .ai-character {
+            transition: all 0.3s;
+        }
+        .ai-character:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+        }
+        .ai-character.selected {
+            border: 2px solid #ffff00 !important;
+            box-shadow: 0 0 20px #ffff00;
+        }
+        </style>
